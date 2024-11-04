@@ -1,4 +1,3 @@
-import { Request, Response, NextFunction } from 'express'
 import { checkSchema } from 'express-validator'
 import { USERS_MESSAGES } from '~/constants/message'
 import { validate } from '~/utils/validation'

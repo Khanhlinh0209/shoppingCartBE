@@ -1,7 +1,6 @@
 import express from 'express'
-import { error, log } from 'node:console'
-import { loginController, registerController } from '~/controllers/users.controllers'
-import { loginValidator, registerValidator } from '~/middlewares/users.middlewares'
+import { registerController } from '~/controllers/users.controllers'
+import { registerValidator } from '~/middlewares/users.middlewares'
 import { wrapAsync } from '~/utils/handlers'
 //tạo router
 const usersRouter = express.Router() //khai báo Router

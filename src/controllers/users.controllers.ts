@@ -1,7 +1,5 @@
 import { NextFunction, Request, Response } from 'express'
 import { LoginReqBody, RegisterReqBody } from '~/models/requests/users.request'
-import User from '~/models/schemas/User.schema'
-import databaseService from '~/services/database.services'
 import usersServices from '~/services/users.services'
 import { ParamsDictionary } from 'express-serve-static-core'
 import { ErrorWithStatus } from '~/models/Errors'
