@@ -1,11 +1,10 @@
 import express from 'express'
+import { error, log } from 'node:console'
 import { loginController, registerController } from '~/controllers/users.controllers'
 import { loginValidator, registerValidator } from '~/middlewares/users.middlewares'
+import { wrapAsync } from '~/utils/handlers'
 //tạo router
 const usersRouter = express.Router() //khai báo Router
-//Router đăng nhập
-// usersRouter.post('/login', loginValidator, loginController)
-
 /*
   desc: Resister a new user
   path: /register
@@ -20,5 +19,17 @@ const usersRouter = express.Router() //khai báo Router
   }
 */
 
-usersRouter.post('/register', registerValidator, registerController)
+usersRouter.post('/register', registerValidator, wrapAsync(registerController))
+
+/*
+des: login
+path: users/login
+method: POST
+body: {
+  email: String,
+  password: String
+}
+*/
+// usersRouter.post('/login', loginValidator, wrapAsync(loginController))
+
 export default usersRouter
