@@ -1,6 +1,12 @@
-import express from 'express'
-import { registerController } from '~/controllers/users.controllers'
-import { registerValidator } from '~/middlewares/users.middlewares'
+import express, { Request, Response } from 'express'
+import { loginController, logoutController, registerController } from '~/controllers/users.controllers'
+import {
+  accessTokenValidator,
+  loginValidator,
+  RefreshTokenValidator,
+  registerValidator
+} from '~/middlewares/users.middlewares'
+import RefreshToken from '~/models/schemas/RefreshToken.schema'
 import { wrapAsync } from '~/utils/handlers'
 //tạo router
 const usersRouter = express.Router() //khai báo Router
@@ -29,6 +35,20 @@ body: {
   password: String
 }
 */
-// usersRouter.post('/login', loginValidator, wrapAsync(loginController))
+usersRouter.post('/login', loginValidator, wrapAsync(loginController))
 
+/*
+desc: logout
+path: users/logout
+method: POST
+hearders {
+  Authorization: 'Bearer <access_token>'
+}
+body : {
+  refresh_token: String
+}
+
+*/
+
+usersRouter.post('/logout', accessTokenValidator, RefreshTokenValidator, wrapAsync(logoutController))
 export default usersRouter

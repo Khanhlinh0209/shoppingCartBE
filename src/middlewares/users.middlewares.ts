@@ -1,7 +1,14 @@
 import { checkSchema } from 'express-validator'
+import { JsonWebTokenError } from 'jsonwebtoken'
+import { capitalize } from 'lodash'
+import HTTP_STATUS from '~/constants/htppStatus'
 import { USERS_MESSAGES } from '~/constants/message'
+import { ErrorWithStatus } from '~/models/Errors'
+import { verifyToken } from '~/utils/jwt'
 import { validate } from '~/utils/validation'
-
+import { Request } from 'express'
+import dotenv from 'dotenv'
+dotenv.config()
 export const registerValidator = validate(
   checkSchema(
     {
@@ -150,4 +157,80 @@ export const loginValidator = validate(
     },
     ['body']
   )
+)
+
+//Viết hàm kiểm access_token
+export const accessTokenValidator = validate(
+  checkSchema(
+    {
+      Authorization: {
+        notEmpty: {
+          errorMessage: USERS_MESSAGES.ACCESS_TOKEN_IS_REQUIRED
+        },
+        custom: {
+          options: async (value, { req }) => {
+            //value này 'Bearer <access_token>'
+            const access_token = value.split(' ')[1]
+            if (!access_token) {
+              throw new ErrorWithStatus({
+                status: HTTP_STATUS.UNAUTHORIZED, //401
+                message: USERS_MESSAGES.ACCESS_TOKEN_IS_REQUIRED
+              })
+            }
+            //Nếu có access_token thì mình sẽ verify(xác thực chữ ký)
+            try {
+              const decode_authorization = await verifyToken({
+                token: access_token,
+                privateKey: process.env.JWT_SECRET_ACCESS_TOKEN as string
+              })
+
+              // decode_authorrization là payload của access_token đã mã hóa
+              //bên trong đó có user_id và token_type
+
+              ;(req as Request).decode_authorization = decode_authorization
+            } catch (error) {
+              throw new ErrorWithStatus({
+                //(error as JsonWebTokenError).message sẽ cho chuỗi `accesstoken invalid`, không đẹp lắm
+                //ta sẽ viết hóa chữ đầu tiên bằng .capitalize() của lodash
+                status: HTTP_STATUS.UNAUTHORIZED,
+                message: capitalize((error as JsonWebTokenError).message)
+              })
+            }
+            //nếu ok hết
+            return true
+          }
+        }
+      }
+    },
+    ['headers']
+  )
+)
+
+//viết hàm  kiểm tra refresh_token
+export const RefreshTokenValidator = validate(
+  checkSchema({
+    refresh_token: {
+      notEmpty: {
+        errorMessage: USERS_MESSAGES.REFRESH_TOKEN_IS_REQUIRED
+      },
+      custom: {
+        options: async (value, { req }) => {
+          //value này là refresh_token
+          try {
+            const decode_refresh_token = await verifyToken({
+              token: value,
+              privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as string
+            })
+            ;(req as Request).decode_refresh_token = decode_refresh_token
+          } catch (error) {
+            throw new ErrorWithStatus({
+              status: HTTP_STATUS.UNAUTHORIZED,
+              message: capitalize((error as JsonWebTokenError).message)
+            })
+          }
+          return true
+        }
+      }
+    }
+  })
 )
