@@ -1,11 +1,18 @@
 import { NextFunction, Request, Response } from 'express'
-import { LoginReqBody, LogoutReqBody, RegisterReqBody, TokenPayload } from '~/models/requests/users.request'
+import {
+  LoginReqBody,
+  LogoutReqBody,
+  RegisterReqBody,
+  TokenPayload,
+  VerifyEmailReqQuery
+} from '~/models/requests/users.request'
 import usersServices from '~/services/users.services'
 import { ParamsDictionary } from 'express-serve-static-core'
 import { ErrorWithStatus } from '~/models/Errors'
 import HTTP_STATUS from '~/constants/htppStatus'
 import dotenv from 'dotenv'
 import { USERS_MESSAGES } from '~/constants/message'
+import { UserVerifyStatus } from '~/constants/enums'
 dotenv.config()
 
 export const registerController = async (
@@ -72,4 +79,89 @@ export const logoutController = async (
   res.status(HTTP_STATUS.OK).json({
     message: USERS_MESSAGES.LOGOUT_SUCCESS
   })
+}
+
+export const verifyEmailTokenController = async (
+  req: Request<ParamsDictionary, any, any, VerifyEmailReqQuery>,
+  res: Response,
+  next: NextFunction
+) => {
+  //khi họ ấn vào link, thì họ sẽ gửi email_verify_token lên thông qua
+  //req.boby
+  const email_verify_token = req.query.email_verify_token as string
+  const { user_id } = req.decode_email_verify_token as TokenPayload
+
+  //kiểm tra xem trong database có user nào có sở hữu user_id và email_verify_token
+  const user = await usersServices.checkEmailVerifyToken({ user_id, email_verify_token })
+  //kiểm tra xem user tìm được bị banned chưa, chưa thì verify
+  if (user.verify == UserVerifyStatus.Banned) {
+    throw new ErrorWithStatus({
+      status: HTTP_STATUS.UNAUTHORIZED,
+      message: USERS_MESSAGES.EMAIL_HAS_BEEN_BANNED
+    })
+  } else {
+    //chưa verify thì verify
+    const result = await usersServices.verifyEmail(user_id)
+    //sau khi verify
+    res.status(HTTP_STATUS.OK).json({
+      message: USERS_MESSAGES.VERIFY_EMAIL_SUCCESS,
+      result //ac và rf
+    })
+  }
+}
+
+export const resendVerifyEmailController = async (
+  req: Request<ParamsDictionary, any, any>,
+  res: Response,
+  next: NextFunction
+) => {
+  //dùng user_id tìm user đó
+  const { user_id } = req.decode_authorization as TokenPayload
+
+  //kiểm tra user đó có verify hay bị banned không ?
+  const user = await usersServices.findUserById(user_id)
+  if (!user) {
+    throw new ErrorWithStatus({
+      status: HTTP_STATUS.UNAUTHORIZED,
+      message: USERS_MESSAGES.USER_NOT_FOUND
+    })
+  }
+  if (user.verify == UserVerifyStatus.Verified) {
+    throw new ErrorWithStatus({
+      status: HTTP_STATUS.OK,
+      message: USERS_MESSAGES.EMAIL_HAS_BEEN_VERIFYED
+    })
+  } else if (user.verify == UserVerifyStatus.Banned) {
+    throw new ErrorWithStatus({
+      status: HTTP_STATUS.OK,
+      message: USERS_MESSAGES.EMAIL_HAS_BEEN_BANNED
+    })
+  } else {
+    //chưa verify thì resendEmailVerify
+    await usersServices.resendEmailVerify(user_id)
+    res.status(HTTP_STATUS.OK).json({
+      message: USERS_MESSAGES.VERIFY_EMAIL_SUCCESS
+    })
+  }
+  //nếu không thì mới resendEmailVerify
+}
+
+export const forgotPasswordController = async (
+  req: Request<ParamsDictionary, any, any>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { email } = req.body
+  const hasUser = await usersServices.checkEmailExist(email)
+  if (!hasUser) {
+    throw new ErrorWithStatus({
+      status: HTTP_STATUS.UNAUTHORIZED,
+      message: USERS_MESSAGES.USER_NOT_FOUND
+    })
+  } else {
+    await usersServices.forgotPassword(email)
+    res.status(HTTP_STATUS.OK).json({
+      message: USERS_MESSAGES.CHECK_EMAIL_TO_RESET_PASSWORD
+    })
+  }
 }

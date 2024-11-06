@@ -1,7 +1,16 @@
 import express, { Request, Response } from 'express'
-import { loginController, logoutController, registerController } from '~/controllers/users.controllers'
+import {
+  forgotPasswordController,
+  loginController,
+  logoutController,
+  registerController,
+  resendVerifyEmailController,
+  verifyEmailTokenController
+} from '~/controllers/users.controllers'
 import {
   accessTokenValidator,
+  emailVerifyTokenValidator,
+  forgotPasswordValidator,
   loginValidator,
   RefreshTokenValidator,
   registerValidator
@@ -49,6 +58,45 @@ body : {
 }
 
 */
-
 usersRouter.post('/logout', accessTokenValidator, RefreshTokenValidator, wrapAsync(logoutController))
+
+/*
+decs: verify email
+Khi người dùng nhấn cào linl có trong email của họ
+thì evt sẽ được fuiwr lên server thông qua req.body
+path: users/verify-token/?email_verify_token=string
+method: GET
+*/
+usersRouter.get('/verify-email/', emailVerifyTokenValidator, wrapAsync(verifyEmailTokenController))
+
+/*
+  decs: resend email verify token
+  người dùng chức năng này khi làm mất, lạc
+  phải đăng nhập thì mới cho verify
+  hearder {
+    Authorization: 'Bearer <access_token>'
+  }
+  method: POST
+*/
+
+usersRouter.post(
+  '/resend-verify-email',
+  accessTokenValidator, //
+  wrapAsync(resendVerifyEmailController)
+)
+
+/*
+  decs: forgot password
+  khi quyên mật khẩu thì sài chức năng này
+  path: users/forgot-password
+  body: {
+    email: String
+    }
+  method: POST
+*/
+usersRouter.post(
+  '/forgot-password',
+  forgotPasswordValidator, //
+  wrapAsync(forgotPasswordController)
+)
 export default usersRouter
