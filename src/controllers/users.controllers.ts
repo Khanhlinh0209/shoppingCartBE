@@ -1,10 +1,15 @@
 import { NextFunction, Request, Response } from 'express'
 import {
+  ChangePasswordReqBody,
   LoginReqBody,
   LogoutReqBody,
+  RefreshTokenReqBody,
   RegisterReqBody,
+  ResetPasswordReqBody,
   TokenPayload,
-  VerifyEmailReqQuery
+  UpdateMeReqBody,
+  VerifyEmailReqQuery,
+  VerifyForgotPasswordTokenReqBody
 } from '~/models/requests/users.request'
 import usersServices from '~/services/users.services'
 import { ParamsDictionary } from 'express-serve-static-core'
@@ -13,6 +18,7 @@ import HTTP_STATUS from '~/constants/htppStatus'
 import dotenv from 'dotenv'
 import { USERS_MESSAGES } from '~/constants/message'
 import { UserVerifyStatus } from '~/constants/enums'
+import { result } from 'lodash'
 dotenv.config()
 
 export const registerController = async (
@@ -165,5 +171,107 @@ export const forgotPasswordController = async (
     })
   }
 }
-//ahihi
-//bé yêu anh
+
+export const verifyForgotPasswordTokenController = async (
+  req: Request<ParamsDictionary, any, VerifyForgotPasswordTokenReqBody>,
+  res: Response,
+  next: NextFunction
+) => {
+  //vào được đây có nghãi là forgot_password_token trong body hợp lệ
+  const { forgot_password_token } = req.body
+  //lấy thêm user_id để tìm xem user có sở hữu forfot_password_token chưa
+  const { user_id } = req.decode_forgot_password_token as TokenPayload
+  //kiểm tra xem forgot_password_token trong database cơ sở hữu chưa
+  await usersServices.checkForgotPasswordToken({ user_id, forgot_password_token })
+  //nếu qua hàm trên êm xui là token hợp lệ
+  res.status(HTTP_STATUS.OK).json({
+    message: USERS_MESSAGES.VERIFY_FORFOT_PASSWORD_TOKEN_SUCCESS
+  })
+}
+
+export const getMeController = async (req: Request<ParamsDictionary, any, any>, res: Response, next: NextFunction) => {
+  //middleware accessTokenValidator đã chạy rồi, nên ta có thể lấy được user_id
+  //từ decode_authorization
+  const { user_id } = req.decode_authorization as TokenPayload
+
+  //tìm user thông qua user_id và trả ra user
+
+  // Tìm user và gửi phản hồi
+  const user = await usersServices.getMe(user_id)
+
+  const userInfo = await usersServices.getMe(user_id)
+  res.status(HTTP_STATUS.OK).json({
+    message: USERS_MESSAGES.GET_ME_SUCCESS,
+    userInfo
+  })
+}
+
+export const resetPasswordController = async (
+  req: Request<ParamsDictionary, any, ResetPasswordReqBody>,
+  res: Response
+) => {
+  // vào được đây tức là toksen trong body là hợp lệ
+  const { forgot_password_token } = req.body
+  // lấy thêm users_id nữa
+  const { user_id } = req.decode_forgot_password_token as TokenPayload
+  await usersServices.checkForgotPasswordToken({ user_id, forgot_password_token })
+  // nếu qua hàm trên êm xui thì có nghĩa là token hợp lệ và mình reset thôi
+  await usersServices.resetPassword({ user_id, password: req.body.password })
+  res.status(HTTP_STATUS.OK).json({
+    message: USERS_MESSAGES.RESET_PASSWORD_SUCCESS
+  })
+}
+
+export const updateMeController = async (
+  req: Request<ParamsDictionary, any, UpdateMeReqBody>, //
+  res: Response,
+  next: NextFunction
+) => {
+  //người ta fuiwr accessToken lên để chứng minh là họ đã đăng nhâph
+  //đồng thời cũng cho mình biết họ là ai thông qua user_id từ payload
+  const { user_id } = req.decode_authorization as TokenPayload
+  const payload = req.body //những gì người dùng gửi lên
+  //ta muốn account phải verify thì mới được cập nhập
+  await usersServices.checkEmailVerified(user_id)
+  //nếu gọi hàm trên mà ko có gì xảy ra thì có nghĩa là user đã verify r
+  //tiến hành cập nhập thông tin ng dùng cung cấp
+  const userInfor = await usersServices.updateMe({ user_id, payload })
+  res.status(HTTP_STATUS.OK).json({
+    message: USERS_MESSAGES.UPDATE_PROFILE_SUCCESS,
+    userInfor
+  })
+}
+
+export const changePasswordController = async (
+  req: Request<ParamsDictionary, any, ChangePasswordReqBody>, //
+  res: Response,
+  next: NextFunction
+) => {
+  const { user_id } = req.decode_authorization as TokenPayload
+  const { old_password, password } = req.body
+  await usersServices.changePassword({
+    user_id,
+    old_password,
+    password
+  })
+  res.status(HTTP_STATUS.OK).json({
+    message: USERS_MESSAGES.CHANGE_PASSWORD_SUCCESS
+  })
+}
+
+export const refreshTokenController = async (
+  req: Request<ParamsDictionary, any, RefreshTokenReqBody>, //
+  res: Response,
+  next: NextFunction
+) => {
+  const { user_id } = req.decode_refresh_token as TokenPayload
+  const { refresh_token } = req.body
+  await usersServices.checkRefreshToken({ user_id, refresh_token })
+  //nếu kiểm tra rf còn hiệu lực thì tiến hành rf cho người dùng
+  const result = await usersServices.refreshToken({ user_id, refresh_token })
+  //trả cho người dùng
+  res.status(HTTP_STATUS.OK).json({
+    message: USERS_MESSAGES.REFRESH_TOKEN_SUCCESS,
+    result
+  })
+}
