@@ -41,5 +41,26 @@ export const USERS_MESSAGES = {
   FORGOT_PASSWORD_TOKEN_IS_INVALID: 'Forgot password token is invalid',
   RESEND_EMAIL_VERIFY_TOKEN_SUCCESS: 'Resend email verify token successfully',
   USER_NOT_FOUND: 'User not found',
-  CHECK_EMAIL_TO_RESET_PASSWORD: 'Check email to reset password'
+  CHECK_EMAIL_TO_RESET_PASSWORD: 'Check email to reset password',
+  GET_ME_SUCCESS: 'Get me successfully',
+  VERIFY_FORFOT_PASSWORD_TOKEN_SUCCESS: 'Verify forgot password token successfully',
+
+  RESET_PASSWORD_SUCCESS: 'Reset password successfully',
+  BIO_MUST_BE_A_STRING: 'Bio must be a string',
+  BIO_LENGTH_MUST_BE_LESS_THAN_200: 'Bio length must be less than 200',
+  LOCATION_MUST_BE_A_STRING: 'Location must be a string',
+  LOCATION_LENGTH_MUST_BE_LESS_THAN_200: 'Location length must be less than 200',
+  WEBSITE_MUST_BE_A_STRING: 'Website must be a string',
+  WEBSITE_LENGTH_MUST_BE_LESS_THAN_200: 'Website length must be less than 200',
+  USERNAME_LENGTH_MUST_BE_LESS_THAN_50: 'Username length must be less than 50',
+  USERNAME_MUST_BE_A_STRING: 'Username must be a string',
+  IMAGE_URL_MUST_BE_A_STRING: 'Image url must be a string',
+  IMAGE_URL_LENGTH_MUST_BE_LESS_THAN_400: 'Image url length must be less than 400',
+  USER_NOT_VERIFIED: 'User not verified',
+  UPDATE_PROFILE_SUCCESS: 'Update profile successfully',
+  USERNAME_ALREADY_EXISTS: 'Username already exists',
+  USERNAME_IS_INVALID:
+    'Username must be a string and length must be 4 - 15, and contain only letters, numbers, and underscores, not only numbers',
+  CHANGE_PASSWORD_SUCCESS: 'Change password successfully',
+  REFRESH_TOKEN_SUCCESS: 'Refresh token successfully'
 } as const

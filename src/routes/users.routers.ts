@@ -1,21 +1,32 @@
 import express, { Request, Response } from 'express'
 import {
+  changePasswordController,
   forgotPasswordController,
+  getMeController,
   loginController,
   logoutController,
+  refreshTokenController,
   registerController,
   resendVerifyEmailController,
-  verifyEmailTokenController
+  resetPasswordController,
+  updateMeController,
+  verifyEmailTokenController,
+  verifyForgotPasswordTokenController
 } from '~/controllers/users.controllers'
+import { filterMiddleare } from '~/middlewares/common.middlewares'
 import {
   accessTokenValidator,
+  changePasswordValidator,
   emailVerifyTokenValidator,
+  forgotPasswordTokenValidator,
   forgotPasswordValidator,
   loginValidator,
-  RefreshTokenValidator,
-  registerValidator
+  refreshTokenValidator,
+  registerValidator,
+  resetPasswordValidator,
+  updateMeValidator
 } from '~/middlewares/users.middlewares'
-import RefreshToken from '~/models/schemas/RefreshToken.schema'
+import { UpdateMeReqBody } from '~/models/requests/users.request'
 import { wrapAsync } from '~/utils/handlers'
 //tạo router
 const usersRouter = express.Router() //khai báo Router
@@ -58,11 +69,11 @@ body : {
 }
 
 */
-usersRouter.post('/logout', accessTokenValidator, RefreshTokenValidator, wrapAsync(logoutController))
+usersRouter.post('/logout', accessTokenValidator, refreshTokenValidator, wrapAsync(logoutController))
 
 /*
 decs: verify email
-Khi người dùng nhấn cào linl có trong email của họ
+Khi người dùng nhấn vào linl có trong email của họ
 thì evt sẽ được fuiwr lên server thông qua req.body
 path: users/verify-token/?email_verify_token=string
 method: GET
@@ -98,5 +109,119 @@ usersRouter.post(
   '/forgot-password',
   forgotPasswordValidator, //
   wrapAsync(forgotPasswordController)
+)
+
+/* decs:verify forgot password token
+kiểm tra forgot password tokencó còn hiệu lực ko
+path: users/verify-forgot-password
+method: POST
+body: {
+  forgot_password_token: string}
+*/
+
+usersRouter.post(
+  '/verify-forgot-password', //
+  forgotPasswordTokenValidator, //kiểm tra forgot_password_token
+  wrapAsync(verifyForgotPasswordTokenController) //xử lý logic verify forgot_password_token
+)
+
+/*
+decs: reset password
+path: users/reset-password
+method: POST
+body: {
+  password: string
+  confirm_password: string
+  forgot_password_token: string
+}
+*/
+usersRouter.post(
+  '/reset-password', //
+  forgotPasswordTokenValidator,
+  resetPasswordValidator, //kiểm tra password, confirm_password, forgot_password_token
+  wrapAsync(resetPasswordController) //xử lý logic reset password
+)
+
+/*
+  decs: get profile của user
+  path:'/me'
+  method: POST
+  header: {
+    Authorization: 'Bearer <access_token>'
+  }
+  body {}
+
+*/
+usersRouter.post('/me', accessTokenValidator, wrapAsync(getMeController))
+
+/*
+des: update profile của user
+path: '/me'
+method: patch
+Header: {Authorization: Bearer <access_token>}
+body: {
+  name?: string
+  date_of_birth?: Date
+  bio?: string // optional
+  location?: string // optional
+  website?: string // optional
+  username?: string // optional
+  avatar?: string // optional
+  cover_photo?: string // optional}
+*/
+
+usersRouter.patch(
+  '/me', //
+  //cần một hàm sàn lọc req.body
+  filterMiddleare<UpdateMeReqBody>([
+    'name',
+    'date_of_birth',
+    'bio',
+    'location',
+    'website',
+    'avatar',
+    'username',
+    'cover_photo'
+  ]),
+  accessTokenValidator,
+  updateMeValidator,
+  wrapAsync(updateMeController)
+)
+
+/*
+decs: change password
+đổi mật khẩu
+path: users/change-password
+method: put
+headers: {
+  Authorization: 'Bearer <access_token>'
+}
+body: {
+  old_password: string
+  password: string
+  confirm_password: string
+}
+*/
+
+usersRouter.put(
+  '/change-password', //
+  accessTokenValidator,
+  changePasswordValidator,
+  wrapAsync(changePasswordController)
+)
+
+/*
+decs: refresh token
+chức năng này dùng khi ac hết hạn, cần lấy ac mới (quà tặng kèm rf mới)
+path: users/refresh-token
+method: POST
+body: {
+  refresh_token: string
+}
+*/
+usersRouter.post(
+  '/refresh-token', //
+  refreshTokenValidator,
+  wrapAsync(refreshTokenController)
 )
 export default usersRouter
