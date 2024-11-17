@@ -4,7 +4,7 @@ import { UPLOAD_IMAGE_DIR } from '~/constants/dir'
 import { getNameFormFile, handlerUploadImage, handlerUploadVideo } from '~/utils/file'
 import fs from 'fs'
 import { MediaType } from '~/constants/enums'
-import { Media } from '~/models/other'
+import { Media } from '~/models/Other'
 
 class MediasServices {
   async handleUploadImage(req: Request) {
