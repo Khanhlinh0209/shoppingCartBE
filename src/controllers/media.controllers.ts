@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import HTTP_STATUS from '~/constants/htppStatus'
 import mediasServices from '~/services/medias.services'
+
 export const uploadImageController = async (
   req: Request, //
   res: Response,

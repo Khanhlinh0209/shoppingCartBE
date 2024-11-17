@@ -79,7 +79,7 @@ export const handlerUploadVideo = async (req: Request) => {
         return reject(error)
       }
       if (!files.video) {
-        return reject(new Error('Image is empty'))
+        return reject(new Error('Video is empty'))
       }
       return resolve(files.video)
     })
